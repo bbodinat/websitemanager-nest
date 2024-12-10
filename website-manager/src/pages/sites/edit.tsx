@@ -79,7 +79,10 @@ export const PagesList = ({ site }: { site: BaseRecord }) => {
   // Pass permanent filters to always fetch pages belonging to a specific site
   const { tableProps } = useTable<BaseRecord, HttpError>({
     resource: 'pages',
-    syncWithLocation: true,
+    syncWithLocation: false,
+    sorters: {
+      
+    },
     filters: {
       permanent: [
         {
@@ -91,18 +94,18 @@ export const PagesList = ({ site }: { site: BaseRecord }) => {
     },
   });
 
-  const createPage = useCreate({
-    resource: 'pages',
-  });
   const createModal = useModalForm<any, HttpError, any>({
     action: 'create',
     resource: 'pages',
     redirect: false,
+    createMutationOptions: {
+      onMutate: ({ values }) => {
+        values.site = site.id;
+      },
+    },
     defaultFormValues: {
       site,
-    },
-    mutationMeta: {
-      populate: ['site'],
+      name: 'Nouvelle page',
     },
   });
 
@@ -120,8 +123,14 @@ export const PagesList = ({ site }: { site: BaseRecord }) => {
         rowKey="id"
         footer={() => <CreateButton onClick={() => createModal.show()} />}
       >
-        <Table.Column dataIndex="name" title="Name" />
+        <Table.Column dataIndex="id" title="ID"
+          sorter={(a, b) => a.id - b.id}
+        />
+        <Table.Column dataIndex="name" title="Name" 
+          sorter={(a, b) => a.name.localeCompare(b.name)}
+        />
         <Table.Column dataIndex="description" title="Description" />
+        <Table.Column dataIndex="layout.name" title="Layout" />
         <Table.Column
           title="Actions"
           dataIndex="actions"
@@ -156,11 +165,8 @@ const PageCreateModal = ({
 }) => {
   const { formProps, modalProps } = props;
 
-  const { selectProps } = useSelect({
-    resource: 'sites', // The resource to fetch (must match the API route)
-    optionLabel: 'name', // The property to use as the label
-    optionValue: 'id', // The property to use as the value
-  });
+  
+
   return (
     <Modal {...modalProps}>
       <Form {...formProps} layout="vertical">
@@ -179,16 +185,6 @@ const PageCreateModal = ({
           ]}
         >
           <Input.TextArea rows={4} placeholder="Enter page description" />
-        </Form.Item>
-        <Form.Item name={['site', 'id']} initialValue={site} label="Site">
-          <Select
-            {...selectProps}
-            defaultValue={{
-              value: site.id,
-              label: site.name,
-            }}
-            placeholder="Select a site"
-          />
         </Form.Item>
       </Form>
     </Modal>

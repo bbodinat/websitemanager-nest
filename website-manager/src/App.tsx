@@ -39,8 +39,9 @@ import { ColorModeContextProvider } from './contexts/color-mode';
 import { ForgotPassword } from './pages/forgotPassword';
 import { Login } from './pages/login';
 import { Register } from './pages/register';
-import { SiteEdit, SiteList, SiteCreate,  SitesShow } from './pages/sites';
+import { SiteEdit, SiteList, SiteCreate, SitesShow } from './pages/sites';
 import { PagesCreate, PagesEdit, PagesList } from './pages/pages';
+import { LayoutsCreate, LayoutsEdit, LayoutsList } from './pages/layouts';
 
 const API_URL = 'http://localhost:3000';
 const WS_URL = 'wss://api.nestjs-query.refine.dev/graphql';
@@ -49,7 +50,7 @@ const wsClient = createClient({ url: WS_URL });
 
 function App() {
   return (
-    (<BrowserRouter>
+    <BrowserRouter>
       <GitHubBanner />
       <RefineKbarProvider>
         <ColorModeContextProvider>
@@ -61,27 +62,37 @@ function App() {
                 notificationProvider={useNotificationProvider}
                 routerProvider={routerBindings}
                 authProvider={authProvider}
-                resources={[{
-                  name: 'sites',
-                  list: '/sites',
-                  create: '/sites/create',
-                  edit: '/sites/edit/:id',
-                  show: '/sites/show/:id',
-                }, {
-                  name: "pages",
-                  list: "/pages",
-                  create: "/pages/create",
-                  edit: "/pages/edit/:id",
-                }, 
-                // {
-                //   name: "sitePages"
-                // }
-                
-              ]
-              
-              }
+                resources={[
+                  {
+                    name: 'sites',
+                    list: '/sites',
+                    create: '/sites/create',
+                    edit: '/sites/edit/:id',
+                    show: '/sites/show/:id',
+                  },
+                  {
+                    name: 'pages',
+                    list: '/pages',
+                    create: '/pages/create',
+                    edit: '/pages/edit/:id',
+                  }, // {
+                  //   name: "sitePages"
+                  // }
+                  {
+                    name: 'layouts',
+                    list: '/layouts',
+                    create: '/layouts/create',
+                    edit: '/layouts/edit/:id',
+                  },
+                  {
+                    name: 'layouts',
+                    list: '/layouts',
+                    create: '/layouts/create',
+                    edit: '/layouts/edit/:id',
+                  },
+                ]}
                 options={{
-                  syncWithLocation: true,
+                  syncWithLocation: false,
                   warnWhenUnsavedChanges: true,
                   useNewQueryKeys: true,
                   projectId: 'ruF8wu-N4X4am-hpgDrI',
@@ -121,6 +132,12 @@ function App() {
                       <Route path="edit/:id" element={<PagesEdit />} />
                       {/* <Route path="show/:id" element={<SitesShow />} /> */}
                     </Route>
+                    <Route path="/layouts">
+                      <Route index element={<LayoutsList />} />
+                      <Route path="create" element={<LayoutsCreate />} />
+                      <Route path="edit/:id" element={<LayoutsEdit />} />
+                      {/* <Route path="show/:id" element={<SitesShow />} /> */}
+                    </Route>
                     <Route path="*" element={<ErrorComponent />} />
                   </Route>
                   <Route
@@ -151,7 +168,7 @@ function App() {
           </AntdApp>
         </ColorModeContextProvider>
       </RefineKbarProvider>
-    </BrowserRouter>)
+    </BrowserRouter>
   );
 }
 
