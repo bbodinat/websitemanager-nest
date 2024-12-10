@@ -7,7 +7,13 @@ import { Table, Space } from 'antd';
 
 
 export const PagesList = () => {
-  const { tableProps } = useTable();
+  
+  const { tableProps } = useTable({
+    resource: 'pages',
+    initialSorter: [{ field: 'id', order: 'desc' }],
+    initialPageSize: 10,
+    // initialFilters: [{ field: 'site.id', operator: 'eq', value: '1' }],
+  });
   return (
     <List>
       <Table {...tableProps}  rowKey="id">

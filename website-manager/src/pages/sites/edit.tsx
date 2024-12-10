@@ -15,9 +15,11 @@ import {
   BaseRecord,
   CrudFilter,
   HttpError,
+  useBreadcrumb,
   useCreate,
   useDelete,
   useModal,
+  useOne,
   useUpdate,
 } from '@refinedev/core';
 import {
@@ -29,60 +31,114 @@ import {
   Select,
   Space,
   Table,
+  Tabs,
   Typography,
 } from 'antd';
 import { on } from 'events';
 import { copyFileSync } from 'fs';
+import {
+  Link,
+  Outlet,
+  Route,
+  Routes,
+  useOutletContext,
+  useParams,
+  useRoutes,
+} from 'react-router-dom';
 // import { PagesList } from '../pages';
 
 export const SiteEdit = () => {
-  const { formProps, saveButtonProps, query } = useForm({
-    redirect: false,
-    meta: { populate: ['pages'] }, // Include the 'pages' relation
+  const {id} = useParams<{id: string}>();
+  console.log(id);
+  const {data } = useOne({
+    resource: 'sites',
+    id: id,
+    // meta: { populate: ['pages'] }, // Include the 'pages' relation
   });
-  const siteDatas = query?.data?.data;
+  const siteDatas = data?.data;
+  console.log(siteDatas);
+  // const siteDatas = query?.data?.data;
   if (!siteDatas) return null;
-  return (
-    <Edit saveButtonProps={saveButtonProps}>
-      <Form {...formProps} layout="vertical">
-        <Form.Item
-          label="Name"
-          name={['name']}
-          rules={[
-            {
-              required: true,
-            },
-          ]}
-        >
-          <Input />
-        </Form.Item>
-        <Form.Item
-          label="Description"
-          name={['description']}
-          rules={[
-            {
-              required: true,
-            },
-          ]}
-        >
-          <Input.TextArea rows={8} />
-        </Form.Item>
-      </Form>
-      <Typography.Title level={4}>Pages</Typography.Title>
 
-      <PagesList site={siteDatas} />
+  // const {breadcrumbs} = useBreadcrumb();
+  // breadcrumbs.push({ label: siteDatas.name, href: `/sites/edit/${siteDatas.id}` });
+
+  return (
+    <Edit
+      title={`${siteDatas.name}`}
+      // saveButtonProps={saveButtonProps}
+      footerButtons={false}
+      headerButtons={[
+        <Link to={`/sites/edit/${siteDatas.id}/`}>
+          <Button>Settings</Button>
+        </Link>,
+        <Link
+          to={{
+            pathname: `/sites/edit/${siteDatas.id}/pages`,
+          }}
+        >
+          <Button>Pages</Button>
+        </Link>,
+        <Link to={`/sites/edit/${siteDatas.id}/layouts`}>
+          <Button>Layouts</Button>
+        </Link>,
+      ]}
+    >
+      <Outlet context={{ site: siteDatas }} />
+
+      
     </Edit>
   );
 };
 
-export const PagesList = ({ site }: { site: BaseRecord }) => {
+export const SiteSettings = () => {
+  const { formProps, saveButtonProps } = useForm({
+    redirect: false,
+  });
+  return (
+    <Form {...formProps} layout="vertical">
+      <Form.Item
+        label="Name"
+        name={['name']}
+        rules={[
+          {
+            required: true,
+          },
+        ]}
+      >
+        <Input />
+      </Form.Item>
+      <Form.Item
+        label="Description"
+        name={['description']}
+        rules={[
+          {
+            required: true,
+          },
+        ]}
+      >
+        <Input.TextArea rows={8} />
+      </Form.Item>
+      <Form.Item>
+        <Button {...saveButtonProps} type="primary">
+          Save
+        </Button>
+      </Form.Item>
+    </Form>
+  );
+};
+
+export const PagesList = () => {
+  const update = useUpdate<BaseRecord, HttpError>({
+    resource: 'pages',
+  });
+  const { site } = useOutletContext<{ site: BaseRecord }>();
+
   // Pass permanent filters to always fetch pages belonging to a specific site
   const { tableProps } = useTable<BaseRecord, HttpError>({
     resource: 'pages',
     syncWithLocation: false,
-    sorters: {
-      
-    },
+    sorters: {},
     filters: {
       permanent: [
         {
@@ -109,10 +165,10 @@ export const PagesList = ({ site }: { site: BaseRecord }) => {
     },
   });
 
-  const { modalProps: createModalProps, show: showCreate } = useModalForm<any>({
-    action: 'create',
-    resource: 'pages',
-  });
+  // const { modalProps: createModalProps, show: showEdit } = useModalForm<any>({
+  //   action: 'edit',
+  //   resource: 'pages',
+  // });
 
   return (
     <>
@@ -123,14 +179,38 @@ export const PagesList = ({ site }: { site: BaseRecord }) => {
         rowKey="id"
         footer={() => <CreateButton onClick={() => createModal.show()} />}
       >
-        <Table.Column dataIndex="id" title="ID"
+        <Table.Column
+          dataIndex="id"
+          title="ID"
           sorter={(a, b) => a.id - b.id}
         />
-        <Table.Column dataIndex="name" title="Name" 
+        <Table.Column
+          dataIndex="name"
+          title="Name"
           sorter={(a, b) => a.name.localeCompare(b.name)}
         />
         <Table.Column dataIndex="description" title="Description" />
-        <Table.Column dataIndex="layout.name" title="Layout" />
+        <Table.Column
+          dataIndex="layout"
+          title="Layout"
+          render={(layout: BaseRecord, record: BaseRecord) => (
+            <Select
+              defaultValue={layout}
+              key={`layout-${record.id}`}
+              style={{ width: 120 }}
+              onChange={(value) => {
+                update.mutate({
+                  id: record.id,
+                  values: { layout: value },
+                });
+              }}
+              options={site.layouts.map((layout: BaseRecord) => ({
+                label: layout.name,
+                value: layout.id,
+              }))}
+            />
+          )}
+        />
         <Table.Column
           title="Actions"
           dataIndex="actions"
@@ -140,7 +220,7 @@ export const PagesList = ({ site }: { site: BaseRecord }) => {
                 hideText
                 resource="pages"
                 size="small"
-                onClick={() => createModal.show(record.id)}
+                // onClick={() => showEdit(record.id)}
               />
               <DeleteButton
                 hideText
@@ -155,8 +235,85 @@ export const PagesList = ({ site }: { site: BaseRecord }) => {
     </>
   );
 };
+export const LayoutsList = () => {
+  const { site } = useOutletContext<{ site: BaseRecord }>();
 
-const PageCreateModal = ({
+  const { tableProps } = useTable<BaseRecord, HttpError>({
+    resource: 'layouts',
+    syncWithLocation: false,
+    sorters: {},
+    filters: {
+      permanent: [
+        {
+          field: 'site.id',
+          operator: 'eq',
+          value: site.id,
+        } as CrudFilter,
+      ],
+    },
+  });
+
+  const createModal = useModalForm<any, HttpError, any>({
+    action: 'create',
+    resource: 'layouts',
+    redirect: false,
+    createMutationOptions: {
+      onMutate: ({ values }) => {
+        values.site = site.id;
+      },
+    },
+    defaultFormValues: {
+      site,
+      name: 'New Layout',
+    },
+  });
+
+  return (
+    <>
+      <LayoutCreateModal site={site} props={createModal} />
+
+      <Table
+        {...tableProps}
+        rowKey="id"
+        footer={() => <CreateButton onClick={() => createModal.show()} />}
+      >
+        <Table.Column
+          dataIndex="id"
+          title="ID"
+          sorter={(a, b) => a.id - b.id}
+        />
+        <Table.Column
+          dataIndex="name"
+          title="Name"
+          sorter={(a, b) => a.name.localeCompare(b.name)}
+        />
+        <Table.Column dataIndex="description" title="Description" />
+        <Table.Column
+          title="Actions"
+          dataIndex="actions"
+          render={(_, record: BaseRecord) => (
+            <Space>
+              <EditButton
+                hideText
+                resource="layouts"
+                size="small"
+                onClick={() => createModal.show(record.id)}
+              />
+              <DeleteButton
+                hideText
+                size="small"
+                recordItemId={record.id}
+                resource="layouts"
+              />
+            </Space>
+          )}
+        />
+      </Table>
+    </>
+  );
+};
+
+const LayoutCreateModal = ({
   props,
   site,
 }: {
@@ -165,7 +322,37 @@ const PageCreateModal = ({
 }) => {
   const { formProps, modalProps } = props;
 
-  
+  return (
+    <Modal {...modalProps}>
+      <Form {...formProps} layout="vertical">
+        <Form.Item
+          name={'name'}
+          label="Layout Name"
+          rules={[{ required: true, message: 'Please enter the layout name' }]}
+        >
+          <Input placeholder="Enter layout name" />
+        </Form.Item>
+        <Form.Item
+          name={'description'}
+          label="Layout Description"
+          rules={[
+            { required: false, message: 'Please enter the layout description' },
+          ]}
+        >
+          <Input.TextArea rows={4} placeholder="Enter layout description" />
+        </Form.Item>
+      </Form>
+    </Modal>
+  );
+};
+const PageCreateModal = ({
+  props,
+  site,
+}: {
+  props: UseModalFormReturnType;
+  site: BaseRecord;
+}) => {
+  const { formProps, modalProps } = props;
 
   return (
     <Modal {...modalProps}>

@@ -16,6 +16,7 @@ import { ApiTags } from '@nestjs/swagger';
     //   }
     // },
     join: {
+      layout: {eager: true},
       site: { eager: true, alias: "site" }, // Allow filtering by site relation
     },
   },

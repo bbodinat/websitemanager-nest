@@ -11,14 +11,13 @@ import {
 } from '@refinedev/antd';
 import '@refinedev/antd/dist/reset.css';
 
-import { liveProvider } from '@refinedev/nestjs-query';
 import routerBindings, {
   CatchAllNavigate,
   DocumentTitleHandler,
   NavigateToResource,
   UnsavedChangesNotifier,
 } from '@refinedev/react-router-v6';
-import { App as AntdApp } from 'antd';
+import { App as AntdApp, Typography } from 'antd';
 import { createClient } from 'graphql-ws';
 import { BrowserRouter, Outlet, Route, Routes } from 'react-router-dom';
 import { authProvider } from './authProvider';
@@ -39,19 +38,24 @@ import { ColorModeContextProvider } from './contexts/color-mode';
 import { ForgotPassword } from './pages/forgotPassword';
 import { Login } from './pages/login';
 import { Register } from './pages/register';
-import { SiteEdit, SiteList, SiteCreate, SitesShow } from './pages/sites';
+import {
+  SiteEdit,
+  SiteList,
+  SiteCreate,
+  SitesShow,
+  SiteSettings,
+} from './pages/sites';
 import { PagesCreate, PagesEdit, PagesList } from './pages/pages';
 import { LayoutsCreate, LayoutsEdit, LayoutsList } from './pages/layouts';
-
+import routerProvider from '@refinedev/react-router-v6';
+import { PagesList as SitePageList } from './pages/sites';
 const API_URL = 'http://localhost:3000';
 const WS_URL = 'wss://api.nestjs-query.refine.dev/graphql';
-
 const wsClient = createClient({ url: WS_URL });
 
 function App() {
   return (
     <BrowserRouter>
-      <GitHubBanner />
       <RefineKbarProvider>
         <ColorModeContextProvider>
           <AntdApp>
@@ -60,7 +64,7 @@ function App() {
                 dataProvider={dataProvider(API_URL)}
                 // liveProvider={liveProvider(wsClient)}
                 notificationProvider={useNotificationProvider}
-                routerProvider={routerBindings}
+                routerProvider={routerProvider}
                 authProvider={authProvider}
                 resources={[
                   {
@@ -68,13 +72,13 @@ function App() {
                     list: '/sites',
                     create: '/sites/create',
                     edit: '/sites/edit/:id',
-                    show: '/sites/show/:id',
                   },
                   {
                     name: 'pages',
                     list: '/pages',
                     create: '/pages/create',
                     edit: '/pages/edit/:id',
+                    // meta: {parent: 'sites'},
                   }, // {
                   //   name: "sitePages"
                   // }
@@ -83,13 +87,14 @@ function App() {
                     list: '/layouts',
                     create: '/layouts/create',
                     edit: '/layouts/edit/:id',
+                    // meta: {parent: 'sites'},
                   },
-                  {
-                    name: 'layouts',
-                    list: '/layouts',
-                    create: '/layouts/create',
-                    edit: '/layouts/edit/:id',
-                  },
+                  // {
+                  //   name: 'layouts',
+                  //   list: '/layouts',
+                  //   create: '/layouts/create',
+                  //   edit: '/layouts/edit/:id',
+                  // },
                 ]}
                 options={{
                   syncWithLocation: false,
@@ -123,7 +128,13 @@ function App() {
                     <Route path="/sites">
                       <Route index element={<SiteList />} />
                       <Route path="create" element={<SiteCreate />} />
-                      <Route path="edit/:id" element={<SiteEdit />} />
+                      {/* <Route path="edit/:id/*" element={<SiteEdit />} /> */}
+                      {/* <Route path="edit/:id/pages" element={<PagesList/>} /> */}
+                      <Route path="edit/:id" element={<SiteEdit />}>
+                        <Route index element={<SiteSettings />} />
+                        <Route path="pages" element={<SitePageList />} />
+                        <Route path="layouts" element={<LayoutsList />} />
+                      </Route>
                       <Route path="show/:id" element={<SitesShow />} />
                     </Route>
                     <Route path="/pages">
